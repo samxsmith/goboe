@@ -1,4 +1,4 @@
-package utils
+package goboe
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-func ReadNote(notePath string) string {
+func ReadFile(notePath string) string {
 	b, err := ioutil.ReadFile(notePath)
 	if err != nil {
 		panic(fmt.Sprintf("cant read file %s: %s", notePath, err))

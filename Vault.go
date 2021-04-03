@@ -3,7 +3,6 @@ package goboe
 import (
 	"fmt"
 	"goboe/blocks"
-	"goboe/utils"
 	"os"
 	"path/filepath"
 	"strings"
@@ -107,7 +106,7 @@ func (v *Vault) RelativePathFromNoteToNote(fromNote, toNote string) string {
 func (v *Vault) AbsolutePathToNote(noteName string) (string, error) {
 	n, ok := v.notes[noteName]
 	if !ok {
-		return "", utils.ErrFileNotFound
+		return "", ErrFileNotFound
 	}
 	return n.path, nil
 }
@@ -117,7 +116,7 @@ func (v *Vault) GetNoteContent(noteName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return utils.ReadNote(path), nil
+	return ReadFile(path), nil
 }
 
 func (v *Vault) RegisterLink(fromNoteName, toNoteName string) {

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/goboe"
+	"github.com/samxsmith/goboe"
 
 	"github.com/gomarkdown/markdown"
 	flag "github.com/spf13/pflag"

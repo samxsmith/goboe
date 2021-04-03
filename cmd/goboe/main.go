@@ -27,7 +27,7 @@ func main() {
 		return
 	}
 
-	root, err := filepath.Abs(root)
+	root, err := goboe.PathToAbs(root)
 	if err != nil {
 		fmt.Println("failed to find your vault:", err)
 		return
@@ -39,8 +39,14 @@ func main() {
 		return
 	}
 
+	outputDir, err := goboe.PathToAbs(*outputDirFlag)
+	if err != nil {
+		fmt.Println("failed to parse your output path:", err)
+		return
+	}
+
 	fmt.Println("Using Obsidian Vault: ", root)
-	fmt.Println("Will output to : ", *outputDirFlag)
+	fmt.Println("Will output to : ", outputDir)
 
 	var templateParts [2][]byte
 	var useTemplate bool
@@ -58,13 +64,6 @@ func main() {
 		}
 		templateParts[0], templateParts[1] = []byte(parts[0]), []byte(parts[1])
 		useTemplate = true
-	}
-
-	if strings.HasPrefix(root, "~") {
-		home, ok := os.LookupEnv("HOME")
-		if ok {
-			root = strings.Replace(root, "~", home, 1)
-		}
 	}
 
 	v := goboe.LoadVault(root)
@@ -86,8 +85,8 @@ func main() {
 			panic(err)
 		}
 
-		outputDir := filepath.Join(*outputDirFlag, pathFromRoot)
-		outputPath := filepath.Join(outputDir, name+".html")
+		noteOutputDir := filepath.Join(outputDir, pathFromRoot)
+		outputPath := filepath.Join(noteOutputDir, name+".html")
 
 		md := content.GetMarkdown()
 
@@ -97,7 +96,7 @@ func main() {
 			html = append(html, templateParts[1]...)
 		}
 
-		os.MkdirAll(outputDir, 0700)
+		os.MkdirAll(noteOutputDir, 0700)
 		if err = ioutil.WriteFile(outputPath, html, 0700); err != nil {
 			panic(err)
 		}

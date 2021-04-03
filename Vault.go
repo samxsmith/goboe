@@ -24,6 +24,12 @@ type NoteNode struct {
 
 func LoadVault(vaultRoot string) Vault {
 	noteInfo := map[string]*NoteNode{}
+	v := Vault{
+		root:      vaultRoot,
+		notes:     noteInfo,
+		backlinks: map[string][]string{},
+	}
+
 	filepath.Walk(vaultRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -45,16 +51,13 @@ func LoadVault(vaultRoot string) Vault {
 				path:    path,
 				fileExt: ext,
 			}
+			v.noteIterator = append(v.noteIterator, name)
 		}
 
 		return nil
 	})
 
-	return Vault{
-		root:      vaultRoot,
-		notes:     noteInfo,
-		backlinks: map[string][]string{},
-	}
+	return v
 }
 
 func (v *Vault) SantiseMarkdown() {
@@ -62,7 +65,6 @@ func (v *Vault) SantiseMarkdown() {
 		c := NewNote(name, v)
 		c.Build()
 		note.content = c
-		v.noteIterator = append(v.noteIterator, name)
 	}
 }
 

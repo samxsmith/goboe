@@ -1,0 +1,16 @@
+image: "golang:1.15"
+
+pages:
+    script:
+    - go get -u github.com/samxsmith/goboe/cmd/goboe
+    - mkdir public
+    - goboe . -o public/ -t _publish_template
+    
+    # generate a basic index page
+    - go get -u github.com/samxsmith/goboe/cmd/index_maker
+    - index_maker ./public
+    artifacts:
+        paths:
+        - public
+    only:
+    - master

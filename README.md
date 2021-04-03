@@ -35,5 +35,5 @@ The template must contain a placeholder for content: `{content}`. Each note's co
 
 The notes are not styled at all, so that you can have full control over their appearance.
 
-
-
+## Coming Soon
+- Indexed tags

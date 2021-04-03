@@ -70,9 +70,6 @@ func (n *Note) Build() {
 	})
 }
 
-// TODO: create map of backlinks from all notes as we go, using Vault method
-// TODO: append backlinks as blocks to notes at end
-
 func (n Note) GetTitle() string {
 	return fmt.Sprintf("# %s", n.title)
 }

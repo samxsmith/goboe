@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"goboe"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"goboe"
 
 	"github.com/gomarkdown/markdown"
 	flag "github.com/spf13/pflag"

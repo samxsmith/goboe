@@ -26,6 +26,12 @@ func main() {
 		return
 	}
 
+	root, err := filepath.Abs(root)
+	if err != nil {
+		fmt.Println("failed to find your vault:", err)
+		return
+	}
+
 	if outputDirFlag == nil || *outputDirFlag == "" {
 		println("Missing required flag: ", "-o")
 		flag.Usage()

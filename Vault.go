@@ -2,10 +2,11 @@ package goboe
 
 import (
 	"fmt"
-	"goboe/blocks"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/samxsmith/goboe/blocks"
 )
 
 type Vault struct {

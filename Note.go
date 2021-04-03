@@ -2,8 +2,9 @@ package goboe
 
 import (
 	"fmt"
-	"goboe/blocks"
 	"strings"
+
+	"github.com/samxsmith/goboe/blocks"
 )
 
 type Note struct {

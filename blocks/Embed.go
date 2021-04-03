@@ -15,15 +15,15 @@ type EmbedNote struct {
 	embedNoteContent  string
 }
 
-var EmbedNoteFinder = regexp.MustCompile("\\!\\[\\[(.+?)\\]\\]")
-var EmbedNoteNameRegex = regexp.MustCompile("^\\!\\[\\[(.+?)\\]\\]$")
+var EmbedFinder = regexp.MustCompile("\\!\\[\\[(.+?)\\]\\]")
+var EmbedNameRegex = regexp.MustCompile("^\\!\\[\\[(.+?)\\]\\]$")
 
-func NewEmbedNote(rawInput string, note NoteProvider) Content {
+func NewEmbed(rawInput string, note NoteProvider) Content {
 	e := EmbedNote{
 		rawInput: rawInput,
 	}
 
-	matches := EmbedNoteNameRegex.FindStringSubmatch(rawInput)
+	matches := EmbedNameRegex.FindStringSubmatch(rawInput)
 	if len(matches) < 2 {
 		e.content = rawInput
 		return e

@@ -20,15 +20,15 @@ var (
 func main() {
 	flag.Parse()
 
-	if outputDirFlag == nil || *outputDirFlag == "" {
-		println("Missing required flag: ", "-o")
-		flag.Usage()
-		return
-	}
-
 	root := flag.Arg(0)
 	if root == "" {
 		println("You need to specify the path to your Obsidian vault. \n\t e.g. goboe ~/Documents/my_vault")
+		return
+	}
+
+	if outputDirFlag == nil || *outputDirFlag == "" {
+		println("Missing required flag: ", "-o")
+		flag.Usage()
 		return
 	}
 

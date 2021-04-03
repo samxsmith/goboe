@@ -58,8 +58,8 @@ func (n *Note) Build() {
 		return b.GetMarkdown()
 	})
 
-	n.content = blocks.EmbedNoteFinder.ReplaceAllStringFunc(n.content, func(match string) string {
-		e := blocks.NewEmbedNote(match, n)
+	n.content = blocks.EmbedFinder.ReplaceAllStringFunc(n.content, func(match string) string {
+		e := blocks.NewEmbed(match, n)
 		return e.GetMarkdown()
 	})
 

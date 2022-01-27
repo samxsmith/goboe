@@ -69,3 +69,28 @@ func getLinkedNoteParts(linkedNoteRef string) (string, string) {
 
 	return linkParts[0], ""
 }
+
+// CombForLinks returns the names of all linked notes
+func CombForLinks(body string) []string {
+	wikiLinks := LinkNoteFinder.FindAllString(body, -1)
+	links := make([]string, len(wikiLinks))
+	for i, l := range wikiLinks {
+		links[i] = GetWikiLinkContent(l)
+	}
+	return links
+}
+
+func GetWikiLinkContent(wikiLink string) string {
+	l := strings.TrimSuffix(wikiLink, "]]")
+	l = strings.TrimPrefix(l, "[[")
+	return l
+}
+
+// DeadLink creates a link that does nothing
+func DeadLink(noteName string) string {
+	return fmt.Sprintf(`<a href="javascript:alert('This note does not exist yet');">%s</a>`, noteName)
+}
+
+func MdLink(noteName, path string) string {
+	return fmt.Sprintf("[%s](%s)", noteName, path)
+}

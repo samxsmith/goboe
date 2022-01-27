@@ -6,15 +6,13 @@ This package is designed to be used as a command line tool for converting your [
 
 This package extends Oboe's functionality and supports all standard markdown, as well as the following Obsidian features:
 - Obsidian Wiki Links
-- Block references
-- Block & whole-note embeds
 - Backlinks
 
 ## Requirements
 - Go(lang)
 
 ## Install
-`go install https://github.com/samxsmith/goboe`
+`go install https://github.com/samxsmith/goboe/cmd/goboe/`
 
 ## How to Use
 `goboe ~/Documents/my_vault -o ./public`

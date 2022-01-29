@@ -6,6 +6,7 @@ import (
 	"github.com/samxsmith/goboe"
 	flag "github.com/spf13/pflag"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -98,8 +99,11 @@ func run(o opts) error {
 
 	for _, note := range vault.Notes() {
 		noteHtml := note.Html(vault.GetLinkRegistry())
-		vaultPathToNote := vault.RelativeLinkToHtml(note.Name())
+		vaultPathToNote := vault.LinkFromVaultRoot(note.Name())
 		noteOutputPath := filepath.Join(o.outputPath, vaultPathToNote)
+		if err := os.MkdirAll(filepath.Dir(noteOutputPath), 0700); err != nil {
+			return fmt.Errorf("unable to mkdir '%s': %w", noteOutputPath, err)
+		}
 
 		noteHtml = templater(noteHtml)
 

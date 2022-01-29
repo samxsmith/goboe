@@ -2,6 +2,7 @@ package goboe
 
 import (
 	"fmt"
+	"github.com/samxsmith/goboe/pkg/linkmanagement"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,7 +10,7 @@ import (
 
 type Vault struct {
 	notes        map[string]Note
-	linkRegistry linkRegistry
+	linkRegistry linkmanagement.LinkRegistry
 	root         string
 }
 
@@ -45,7 +46,7 @@ func newVault(root string) Vault {
 	v := Vault{}
 	v.root = root
 	v.notes = map[string]Note{}
-	v.linkRegistry = newLinkRegistry()
+	v.linkRegistry = linkmanagement.NewLinkRegistry()
 	return v
 }
 
@@ -87,19 +88,19 @@ func (v *Vault) ApplyFrontMatterFilter(desiredFrontMatterKey string) {
 func (v *Vault) generateLinks() {
 	for _, note := range v.notes {
 		linksInThisNote := note.linkedNoteNames
-		var links []link
+		var links []linkmanagement.Link
 		for _, linkedNoteName := range linksInThisNote {
-			link := link{
-				name: linkedNoteName,
-				path: v.RelativeLinkToHtml(linkedNoteName),
+			link := linkmanagement.Link{
+				Name:         linkedNoteName,
+				PathFromRoot: v.LinkFromVaultRoot(linkedNoteName),
 			}
 			links = append(links, link)
 		}
 
 		// not necessary at this point, but may wish to record this link direction in future
-		noteLink := link{
-			name: note.name,
-			path: v.RelativeLinkToHtml(note.name),
+		noteLink := linkmanagement.Link{
+			Name:         note.name,
+			PathFromRoot: v.LinkFromVaultRoot(note.name),
 		}
 		v.linkRegistry.RegisterLinks(noteLink, links)
 	}
@@ -115,11 +116,11 @@ func (v *Vault) Notes() []Note {
 	return notes
 }
 
-func (v *Vault) GetLinkRegistry() linkRegistry {
+func (v *Vault) GetLinkRegistry() linkmanagement.LinkRegistry {
 	return v.linkRegistry
 }
 
-func (v *Vault) RelativeLinkToHtml(noteName string) string {
+func (v *Vault) LinkFromVaultRoot(noteName string) string {
 	note, ok := v.notes[noteName]
 	if !ok {
 		return ""

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/go-yaml/yaml"
 	"github.com/gomarkdown/markdown"
-	"github.com/samxsmith/goboe/blocks"
+	"github.com/samxsmith/goboe/pkg/blocks"
+	"github.com/samxsmith/goboe/pkg/linkmanagement"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -65,7 +66,7 @@ func extractFrontMatter(rawContent string) (bodyContent string, frontMatter map[
 	}
 
 	if err := yaml.Unmarshal([]byte(nonEmptyParts[0]), &frontMatter); err != nil {
-		fmt.Println("could not pass front matter: ", err)
+		fmt.Printf("could not pass front matter for file %s: %s\n", rawContent, err)
 		return rawContent, frontMatter
 	}
 	return nonEmptyParts[1], frontMatter
@@ -78,12 +79,12 @@ func (n Note) Path() string {
 	return n.filepath
 }
 
-func (n Note) Html(lR linkRegistry) []byte {
+func (n Note) Html(lR linkmanagement.LinkRegistry) []byte {
 	backlinks := lR.GetBacklinksForNote(n.name)
 
-	links := map[string]link{}
+	links := map[string]linkmanagement.Link{}
 	for _, l := range lR.GetLinksForNote(n.name) {
-		links[l.name] = l
+		links[l.Name] = l
 	}
 
 	md := markdownifyWikiLinks(n.body, links)
@@ -104,15 +105,15 @@ func (n Note) Html(lR linkRegistry) []byte {
 	return toHtml(md)
 }
 
-func markdownifyWikiLinks(contentWithWikiLinks string, links map[string]link) string {
+func markdownifyWikiLinks(contentWithWikiLinks string, links map[string]linkmanagement.Link) string {
 	return blocks.LinkNoteFinder.ReplaceAllStringFunc(contentWithWikiLinks, func(wikiLink string) string {
 		noteName := blocks.GetWikiLinkContent(wikiLink)
 
 		link, ok := links[noteName]
-		if !ok || link.path == "" {
+		if !ok || link.GetLinkPath() == "" {
 			return blocks.DeadLink(noteName)
 		}
-		return blocks.MdLink(noteName, link.path)
+		return blocks.MdLink(noteName, link.GetLinkPath())
 	})
 }
 

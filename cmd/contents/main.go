@@ -6,6 +6,7 @@ import (
 	"github.com/samxsmith/goboe"
 	flag "github.com/spf13/pflag"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 )
 
@@ -71,6 +72,34 @@ var templater = func(noteBodyHtml []byte) []byte {
 	return noteBodyHtml
 }
 
+type fileTree struct {
+	fullPath string
+	subTrees map[string]*fileTree
+	notes    []goboe.Note
+}
+
+func (ft *fileTree) Add(pathParts []string, n goboe.Note) {
+
+	if len(pathParts) == 0 || pathParts[0] == "." {
+		ft.notes = append(ft.notes, n)
+		return
+	}
+
+	if subtree, ok := ft.subTrees[pathParts[0]]; ok {
+		subtree.Add(pathParts[1:], n)
+		return
+	}
+
+	subtree := &fileTree{
+		fullPath: filepath.Join(ft.fullPath, pathParts[0]),
+		subTrees: map[string]*fileTree{},
+	}
+
+	subtree.Add(pathParts[1:], n)
+	ft.subTrees[pathParts[0]] = subtree
+	return
+}
+
 func run(o opts) error {
 	vault, err := goboe.OpenVault(o.vaultRoot, o.frontMatterFilter)
 	if err != nil {
@@ -95,18 +124,51 @@ func run(o opts) error {
 		}
 	}
 
-	output := make([]string, len(vault.Notes()))
-	for i, note := range vault.Notes() {
+	baseTree := fileTree{
+		// empty path at base
+		fullPath: "",
+		subTrees: map[string]*fileTree{},
+	}
+
+	for _, note := range vault.Notes() {
 		vaultPathToNote := vault.LinkFromVaultRoot(note.Name())
-		output[i] = fmt.Sprintf(`<a href="%s">%s</a>`, vaultPathToNote, note.Name())
+		dir := filepath.Dir(vaultPathToNote)
+		p := strings.Split(dir, "/")
+		baseTree.Add(p, note)
 	}
 
-	fmt.Println("Writing contents page: ", o.outputPath)
+	buildIndexFile(o.outputPath, baseTree)
 
-	b := []byte(strings.Join(output, "<br>"))
-	err = ioutil.WriteFile(o.outputPath, b, 0700)
-	if err != nil {
-		return fmt.Errorf("unable to write file: %w", err)
-	}
 	return nil
+}
+
+func buildIndexFile(outputBasePath string, t fileTree) {
+	var subDirLinks []string
+	for _, ds := range t.subTrees {
+		relPath, _ := filepath.Rel(t.fullPath, ds.fullPath)
+		subIndexPath := filepath.Join(relPath, "index.html")
+		subDirLinks = append(subDirLinks, fmt.Sprintf(`<a href="%s">%s</a>`, subIndexPath, ds.fullPath))
+		buildIndexFile(outputBasePath, *ds)
+	}
+
+	subDirB := []byte(strings.Join(subDirLinks, "<br>"))
+
+	noteLines := make([]string, len(t.notes))
+	for i, note := range t.notes {
+		noteLines[i] = fmt.Sprintf(`<a href="%s">%s</a>`, note.Path(), note.Name())
+	}
+
+	noteB := []byte(strings.Join(noteLines, "<br>"))
+
+	output := append(subDirB, []byte("<br><br>")...)
+	output = append(output, noteB...)
+
+	basePath := filepath.Dir(outputBasePath)
+	outputPath := filepath.Join(basePath, t.fullPath, "index.html")
+
+	fmt.Println("writing ", outputPath)
+
+	if err := ioutil.WriteFile(outputPath, output, 0700); err != nil {
+		panic(err)
+	}
 }

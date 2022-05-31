@@ -147,7 +147,7 @@ func buildIndexFile(outputBasePath string, t fileTree) {
 	for _, ds := range t.subTrees {
 		relPath, _ := filepath.Rel(t.fullPath, ds.fullPath)
 		subIndexPath := filepath.Join(relPath, "index.html")
-		subDirLinks = append(subDirLinks, fmt.Sprintf(`<a href="%s">%s</a>`, subIndexPath, ds.fullPath))
+		subDirLinks = append(subDirLinks, fmt.Sprintf(`<a href="%s">&#128193; %s</a>`, subIndexPath, ds.fullPath))
 		buildIndexFile(outputBasePath, *ds)
 	}
 

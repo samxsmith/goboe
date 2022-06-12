@@ -3,22 +3,24 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/samxsmith/goboe"
-	flag "github.com/spf13/pflag"
+	"io/fs"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/samxsmith/goboe"
+	flag "github.com/spf13/pflag"
 )
 
 var (
-	outputFileFlag    = flag.StringP("output-dir", "o", "", "(required) Where would you like the us to store the output files?")
 	templateFlag      = flag.StringP("template", "t", "", "(optional) You can specify a template to wrap your content")
 	frontMatterFilter = flag.StringP("front-matter-filter", "f", "", "(optional) Specify a front matter filter. If present, only notes with this front matter key will be included.")
 )
 
 type opts struct {
-	outputPath, templatePath     string
-	frontMatterFilter, vaultRoot string
+	templatePath            string
+	frontMatterFilter, root string
 }
 
 func main() {
@@ -39,7 +41,7 @@ func getFlags() (f opts, e error) {
 
 	root := flag.Arg(0)
 	if root == "" {
-		return f, fmt.Errorf("You need to specify the path to your Obsidian vault. \n\t e.g. goboe ~/Documents/my_vault")
+		return f, fmt.Errorf("You need to specify the path to your Goboe-built vault. \n\t e.g. goboe ~/Documents/my_vault")
 	}
 
 	root, err := goboe.PathToAbs(root)
@@ -47,22 +49,10 @@ func getFlags() (f opts, e error) {
 		return f, fmt.Errorf("failed to find your vault: %w", err)
 	}
 
-	if outputFileFlag == nil || *outputFileFlag == "" {
-		println("Missing required flag: ", "-o")
-		flag.Usage()
-		return
-	}
-
-	outputDir, err := goboe.PathToAbs(*outputFileFlag)
-	if err != nil {
-		return f, fmt.Errorf("failed to parse your output path: %w", err)
-	}
-
 	return opts{
-		outputPath:        outputDir,
 		templatePath:      *templateFlag,
 		frontMatterFilter: *frontMatterFilter,
-		vaultRoot:         root,
+		root:              root,
 	}, nil
 }
 
@@ -75,18 +65,18 @@ var templater = func(noteBodyHtml []byte) []byte {
 type fileTree struct {
 	fullPath string
 	subTrees map[string]*fileTree
-	notes    []goboe.Note
+	files    []string
 }
 
-func (ft *fileTree) Add(pathParts []string, n goboe.Note) {
+func (ft *fileTree) Add(pathParts []string, name string) {
 
 	if len(pathParts) == 0 || pathParts[0] == "." {
-		ft.notes = append(ft.notes, n)
+		ft.files = append(ft.files, name)
 		return
 	}
 
 	if subtree, ok := ft.subTrees[pathParts[0]]; ok {
-		subtree.Add(pathParts[1:], n)
+		subtree.Add(pathParts[1:], name)
 		return
 	}
 
@@ -95,17 +85,12 @@ func (ft *fileTree) Add(pathParts []string, n goboe.Note) {
 		subTrees: map[string]*fileTree{},
 	}
 
-	subtree.Add(pathParts[1:], n)
+	subtree.Add(pathParts[1:], name)
 	ft.subTrees[pathParts[0]] = subtree
 	return
 }
 
 func run(o opts) error {
-	vault, err := goboe.OpenVault(o.vaultRoot, o.frontMatterFilter)
-	if err != nil {
-		return fmt.Errorf("OpenVault: %w", err)
-	}
-
 	if o.templatePath != "" {
 		b, err := ioutil.ReadFile(o.templatePath)
 		if err != nil {
@@ -130,15 +115,29 @@ func run(o opts) error {
 		subTrees: map[string]*fileTree{},
 	}
 
-	for _, note := range vault.Notes() {
-		vaultPathToNote := vault.LinkFromVaultRoot(note.Name())
-		dir := filepath.Dir(vaultPathToNote)
+	err := filepath.WalkDir(o.root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		relPathToNote, err := filepath.Rel(o.root, path)
+		if err != nil {
+			return err
+		}
+		dir := filepath.Dir(relPathToNote)
 		p := strings.Split(dir, "/")
-		baseTree.Add(p, note)
+		baseTree.Add(p, filepath.Base(relPathToNote))
+
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
 	}
 
-	buildIndexFile(o.outputPath, baseTree)
-
+	buildIndexFile(o.root, baseTree)
 	return nil
 }
 
@@ -153,9 +152,9 @@ func buildIndexFile(outputBasePath string, t fileTree) {
 
 	subDirB := []byte(strings.Join(subDirLinks, "<br>"))
 
-	noteLines := make([]string, len(t.notes))
-	for i, note := range t.notes {
-		noteLines[i] = fmt.Sprintf(`<a href="%s">%s</a>`, note.Path(), note.Name())
+	noteLines := make([]string, len(t.files))
+	for i, note := range t.files {
+		noteLines[i] = fmt.Sprintf(`<a href="%s">%s</a>`, note, note)
 	}
 
 	noteB := []byte(strings.Join(noteLines, "<br>"))
@@ -163,10 +162,11 @@ func buildIndexFile(outputBasePath string, t fileTree) {
 	output := append(subDirB, []byte("<br><br>")...)
 	output = append(output, noteB...)
 
-	basePath := filepath.Dir(outputBasePath)
-	outputPath := filepath.Join(basePath, t.fullPath, "index.html")
+	outputPath := filepath.Join(outputBasePath, t.fullPath, "index.html")
 
 	fmt.Println("writing ", outputPath)
+
+	os.MkdirAll(filepath.Dir(outputPath), 0700)
 
 	if err := ioutil.WriteFile(outputPath, output, 0700); err != nil {
 		panic(err)

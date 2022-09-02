@@ -2,10 +2,11 @@ package goboe
 
 import (
 	"fmt"
-	"github.com/samxsmith/goboe/pkg/linkmanagement"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/samxsmith/goboe/pkg/linkmanagement"
 )
 
 type Vault struct {
@@ -89,9 +90,11 @@ func (v *Vault) generateLinks() {
 	for _, note := range v.notes {
 		linksInThisNote := note.linkedNoteNames
 		var links []linkmanagement.Link
-		for _, linkedNoteName := range linksInThisNote {
+		for _, linkedNoteFileName := range linksInThisNote {
+			linkedNoteName := strings.TrimSuffix(linkedNoteFileName, filepath.Ext(linkedNoteFileName))
+
 			link := linkmanagement.Link{
-				Name:         linkedNoteName,
+				Name:         linkedNoteFileName,
 				PathFromRoot: v.LinkFromVaultRoot(linkedNoteName),
 			}
 			links = append(links, link)
